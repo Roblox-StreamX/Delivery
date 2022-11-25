@@ -1,2 +1,5 @@
+rich
 aiohttp
 pymongo
+requests
+python-dotenv
