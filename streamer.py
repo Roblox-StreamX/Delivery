@@ -9,5 +9,6 @@ from aiohttp import web
 if __name__ == "__main__":
     web.run_app(
         app,
-        port = os.getenv("PORT", 8080)
+        host = os.getenv("SERVHOST", "0.0.0.0"),
+        port = os.getenv("SERVPORT", 8080),
     )
