@@ -71,7 +71,6 @@ async def upload_part(req) -> web.Response:
         tb = []
         for part in (await req.read()).decode().split(","):
             x, y, z, d = part.split(":")
-            print("B64:", d)
             tb.append({"x": float(x), "y": float(y), "z": float(z), "d": d})
 
         app.mongo.parts[kdata["storagekey"]].insert_many(tb)
@@ -97,8 +96,8 @@ async def download_parts(req) -> web.Response:
         x, y, z = float(x), float(y), float(z)
         parts = list(app.mongo.parts[kdata["storagekey"]].find({
             "x": {"$lt": x + sd, "$gt": x - sd},
-            "y": {"$lt": z + sd, "$gt": z - sd},
-            "z": {"$lt": y + sd, "$gt": y - sd},
+            "y": {"$lt": y + sd, "$gt": y - sd},
+            "z": {"$lt": z + sd, "$gt": z - sd},
         }))
         if not parts:
             return web.Response(body = "!")
