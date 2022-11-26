@@ -7,6 +7,7 @@ from src import app
 from aiohttp import web
 from requests import get
 from secrets import token_hex
+from bson.binary import Binary
 
 # Initialization
 def mkresp(code: int, data: dict) -> web.Response:
@@ -40,21 +41,44 @@ async def init_server(req) -> web.Response:
 
         # Generate storage key
         storagekey = str(gameid) + str(placever)
-        authkey = app.mongo.keys.find_one({"storagekey": storagekey})
+        authkey, upload = app.mongo.keys.find_one({"storagekey": storagekey}), False
         if authkey is None:
-            authkey = token_hex(16)
-            app.mongo.keys.insert_one({"storagekey": storagekey, "authkey": authkey, "apikey": apikey, "count": 0})
+            authkey, upload = token_hex(16), True
+            app.mongo.keys.insert_one({"storagekey": storagekey, "authkey": authkey, "apikey": apikey})
 
         else:
             if apikey != authkey["apikey"]:
                 return mkresp(401, {"message": "API key missing permissions for requested game."})
 
             authkey = authkey["authkey"]
-            app.mongo.keys.update_one({"storagekey": storagekey}, {"$set": {"count": authkey["count"] + 1}})
 
-        return mkresp(200, {"key": authkey})
+        return mkresp(200, {"key": authkey, "upload": upload})
 
     except KeyError:
         return mkresp(400, {"message": "Missing either GameID or Place Version."})
+
+@routes.post("/upload")
+async def upload_part(req) -> web.Response:
+    authkey = str(req.headers.get("X-StreamX-Auth", ""))
+    if len(authkey) > 32:  # This is just sanitization for MongoDB
+        return mkresp(400, {"message": "Invalid auth key."})
+
+    kdata = app.mongo.keys.find_one({"authkey": authkey})
+    if kdata is None:
+        return mkresp(400, {"message": "Invalid auth key."})
+
+    # Fetch part data
+    try:
+        tb = []
+        for part in (await req.read()).split(b"\x82("):  # \x82( is Roblox's conversion of our magic number
+            x, y, z, d = part.split(b":")
+            tb.append({"x": float(x.decode()), "y": float(y.decode()), "z": float(z.decode()), "d": Binary(d)})
+
+        app.mongo.parts[kdata["storagekey"]].insert_many(tb)
+        return mkresp(200, {"message": "OK"})
+
+    except Exception as e:
+        print(type(e), e)
+        return mkresp(400, {"message": "Invalid part information."})
 
 app.add_routes(routes)
