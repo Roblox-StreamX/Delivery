@@ -7,7 +7,6 @@ from src import app
 from aiohttp import web
 from requests import get
 from secrets import token_hex
-from bson.binary import Binary
 
 # Initialization
 def mkresp(code: int, data: dict) -> web.Response:
@@ -70,15 +69,43 @@ async def upload_part(req) -> web.Response:
     # Fetch part data
     try:
         tb = []
-        for part in (await req.read()).split(b"\x82("):  # \x82( is Roblox's conversion of our magic number
-            x, y, z, d = part.split(b":")
-            tb.append({"x": float(x.decode()), "y": float(y.decode()), "z": float(z.decode()), "d": Binary(d)})
+        for part in (await req.read()).decode().split(","):
+            x, y, z, d = part.split(":")
+            print("B64:", d)
+            tb.append({"x": float(x), "y": float(y), "z": float(z), "d": d})
 
         app.mongo.parts[kdata["storagekey"]].insert_many(tb)
         return mkresp(200, {"message": "OK"})
 
-    except Exception as e:
-        print(type(e), e)
+    except Exception:
         return mkresp(400, {"message": "Invalid part information."})
+
+@routes.post("/download")
+async def download_parts(req) -> web.Response:
+    authkey = str(req.headers.get("X-StreamX-Auth", ""))
+    if len(authkey) > 32:  # This is just sanitization for MongoDB
+        return mkresp(400, {"message": "Invalid auth key."})
+
+    kdata = app.mongo.keys.find_one({"authkey": authkey})
+    if kdata is None:
+        return mkresp(400, {"message": "Invalid auth key."})
+
+    # Calculate head position
+    try:
+        d = await req.json()
+        (x, y, z), sd = d["HeadPosition"], d["StudDifference"]
+        x, y, z = float(x), float(y), float(z)
+        parts = list(app.mongo.parts[kdata["storagekey"]].find({
+            "x": {"$lt": x + sd, "$gt": x - sd},
+            "y": {"$lt": z + sd, "$gt": z - sd},
+            "z": {"$lt": y + sd, "$gt": y - sd},
+        }))
+        if not parts:
+            return web.Response(body = "!")
+
+        return web.Response(body = ",".join([p["d"] for p in parts]))
+
+    except KeyError:
+        return mkresp(400, {"message": "Missing required fields: HeadPosition + StudDifference."})
 
 app.add_routes(routes)
