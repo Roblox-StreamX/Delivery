@@ -55,7 +55,8 @@ async def init_server(req) -> web.Response:
                 authkey, upload = token_hex(16), True
                 app.mongo.keys.insert_one({"storagekey": storagekey, "authkey": authkey, "apikey": apikey})
 
-            authkey = authkey["authkey"]
+            else:
+                authkey = authkey["authkey"]
 
         return mkresp(200, {"key": authkey, "upload": upload})
 
