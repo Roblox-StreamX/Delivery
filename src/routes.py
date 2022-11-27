@@ -21,6 +21,9 @@ if not apikey_token.strip():
     log.error("No API key for purchase server set in environment!")
 
 def validate_key(key: str) -> bool:
+    if not key.strip():
+        return False
+
     return get(f"{apikey_url}{key}", headers = {"X-StreamX-Token": apikey_token}).json()
 
 # Routing
