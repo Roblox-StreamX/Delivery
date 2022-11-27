@@ -49,6 +49,12 @@ async def init_server(req) -> web.Response:
             if apikey != authkey["apikey"]:
                 return mkresp(401, {"message": "API key missing permissions for requested game."})
 
+            elif int(placever) == 0:
+                app.mongo.parts[storagekey].drop()
+                app.mongo.keys.delete_one({"authkey": authkey["authkey"]})
+                authkey, upload = token_hex(16), True
+                app.mongo.keys.insert_one({"storagekey": storagekey, "authkey": authkey, "apikey": apikey})
+
             authkey = authkey["authkey"]
 
         return mkresp(200, {"key": authkey, "upload": upload})
