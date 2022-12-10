@@ -1,4 +1,5 @@
-# Copyright 2022 StreamX Developers
+# Copyright 2022 iiPython
+# Copyright 2022 Crcoli737
 
 # Modules
 import os
