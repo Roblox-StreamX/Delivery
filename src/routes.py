@@ -1,12 +1,11 @@
 # Copyright 2022 StreamX Developers
 
 # Modules
-import os
 import logging
 from src import app
 from aiohttp import web
-from requests import get
 from secrets import token_hex
+from datetime import datetime, timezone
 
 # Initialization
 def mkresp(code: int, data: dict) -> web.Response:
@@ -16,15 +15,15 @@ routes = web.RouteTableDef()
 log = logging.getLogger("rich")
 
 # API key handlers
-apikey_url, apikey_token = f"{os.getenv('PURCHASEIP')}/active/", os.getenv("PURCHASEKEY")
-if not apikey_token.strip():
-    log.error("No API key for purchase server set in environment!")
-
 def validate_key(key: str) -> bool:
     if not key.strip():
         return False
 
-    return get(f"{apikey_url}{key}", headers = {"X-StreamX-Token": apikey_token}).json()
+    user = app.payment["data"].find_one({"apikeys": {"key": key, "reason": None}})
+    if user is None:
+        return False
+
+    return user["quota"] > 0
 
 # Routing
 @routes.get("/")
@@ -40,6 +39,17 @@ async def init_server(req) -> web.Response:
 
         d = await req.json()
         gameid, placever = d["gameid"], d["placever"]
+
+        # Check if game is whitelisted
+        user = app.payment["data"].find_one({"whitelist": gameid})
+        if user is None:
+            return mkresp(401, {"message": "You do not have access to this game."})
+
+        # Reduce user's quota
+        dt = datetime.now(timezone.utc).strftime("%D")
+        if dt != user["lastusage"]:
+            app.payment["data"].update_one({"userid": user["userid"]}, {"$set": {"quota": user["quota"] - 1}})
+            app.payment["data"].update_one({"userid": user["userid"]}, {"$set": {"lastusage": dt}})
 
         # Generate storage key
         storagekey = str(gameid) + str(placever)
