@@ -28,8 +28,7 @@ def validate_key(key: str) -> bool:
 # Routing
 @routes.get("/")
 async def status(req) -> web.Response:
-    with open("src/index.html") as handle:
-        return web.Response(text = handle.read(), status = 200)
+    return mkresp(200, {"message": "OK"})
 
 @routes.post("/init")
 async def init_server(req) -> web.Response:
