@@ -28,7 +28,7 @@ def validate_key(key: str) -> bool:
 # Routing
 @routes.get("/")
 async def status(req) -> web.Response:
-    with open("index.html") as handle:
+    with open("src/index.html") as handle:
         return web.Response(text = handle.read(), status = 200)
 
 @routes.post("/init")
