@@ -25,26 +25,21 @@ app = web.Application()
 log.info("Initialized aiohttp successfully!")
 
 # Connect to MongoDB
+user, pasw = os.getenv("MONGO_USER", ""), os.getenv("MONGO_PASS", "")
+authstr = f"{qp(user)}:{qp(pasw)}@" if (user.strip() and pasw.strip()) else ""
+mongo = MongoClient(
+    f"mongodb://{authstr}{os.getenv('MONGO_HOSTS', '')}",
+    serverSelectionTimeoutMS = 1000  # ms
+)
 try:
-    user, pasw = os.getenv("MONGO_USER", ""), os.getenv("MONGO_PASS", "")
-    authstr = f"{qp(user)}:{qp(pasw)}@" if (user.strip() and pasw.strip()) else ""
-    mongo = MongoClient(
-        f"mongodb://{authstr}{os.getenv('MONGO_HOSTS', '')}",
-        serverSelectionTimeoutMS = 1000  # ms
-    )
-    try:
-        mongo.server_info()
-        log.info(f"Connected to MongoDB at {mongo.client.address[0]}!")
+    mongo.server_info()
+    log.info(f"Connected to MongoDB at {mongo.client.address[0]}!")
 
-        app.mongo = mongo["streaming"]
-        app.payment = mongo["purchases"]
+    app.mongo = mongo["streaming"]
+    app.payment = mongo["purchases"]
 
-    except errors.ServerSelectionTimeoutError:
-        log.critical("FAILED to connect to MongoDB! Check MONGO* env and database status.")
-        exit(1)
-
-except ValueError:
-    log.error("FAILED to read environment variables! Check MONGO_PORT and ensure it's an integer.")
+except errors.ServerSelectionTimeoutError:
+    log.critical("FAILED to connect to MongoDB! Check MONGO* env and database status.")
     exit(1)
 
 # Routes

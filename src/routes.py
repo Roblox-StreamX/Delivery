@@ -7,12 +7,14 @@ from aiohttp import web
 from secrets import token_hex
 from datetime import datetime, timezone
 
+from .logging import write_log
+
 # Initialization
 def mkresp(code: int, data: dict) -> web.Response:
     return web.json_response({"code": code} | data, status = code)
 
-routes = web.RouteTableDef()
-log = logging.getLogger("rich")
+routes, log = web.RouteTableDef(), logging.getLogger("rich")
+error_format = "[ PLACEID: {} ] [ PLACEVER: {} ] [ APIKEY: {} ]:\n\t{}"
 
 # API key handlers
 def validate_key(key: str) -> bool:
@@ -38,11 +40,12 @@ async def init_server(req) -> web.Response:
             return mkresp(401, {"message": "Invalid API key."})
 
         d = await req.json()
-        gameid, placever = d["gameid"], d["placever"]
+        placeid, placever = d["placeid"], d["placever"]
 
         # Check if game is whitelisted
-        user = app.payment["data"].find_one({"whitelist": gameid})
+        user = app.payment["data"].find_one({"whitelist": placeid})
         if user is None:
+            write_log(error_format.format(placeid, placever, apikey, "401 Unauthorized (game not whitelisted)"))
             return mkresp(401, {"message": "You do not have access to this game."})
 
         # Reduce user's quota
@@ -52,7 +55,7 @@ async def init_server(req) -> web.Response:
             app.payment["data"].update_one({"userid": user["userid"]}, {"$set": {"lastusage": dt}})
 
         # Generate storage key
-        storagekey = str(gameid) + str(placever)
+        storagekey = f"{placeid}{placever}"
         authkey, upload = app.mongo.keys.find_one({"storagekey": storagekey}), False
         if authkey is None:
             authkey, upload = token_hex(16), True
@@ -60,6 +63,7 @@ async def init_server(req) -> web.Response:
 
         else:
             if apikey != authkey["apikey"]:
+                write_log(error_format.format(placeid, placever, apikey, "401 Unauthorized (unmatching api key)"))
                 return mkresp(401, {"message": "API key missing permissions for requested game."})
 
             elif int(placever) == 0:
@@ -74,17 +78,17 @@ async def init_server(req) -> web.Response:
         return mkresp(200, {"key": authkey, "upload": upload})
 
     except KeyError:
-        return mkresp(400, {"message": "Missing either GameID or Place Version."})
+        return mkresp(400, {"message": "Missing either PlaceID or Place Version."})
 
 @routes.post("/upload")
 async def upload_part(req) -> web.Response:
     authkey = str(req.headers.get("X-StreamX-Auth", ""))
     if len(authkey) > 32:  # This is just sanitization for MongoDB
-        return mkresp(400, {"message": "Invalid auth key."})
+        return mkresp(401, {"message": "Invalid auth key."})
 
     kdata = app.mongo.keys.find_one({"authkey": authkey})
     if kdata is None:
-        return mkresp(400, {"message": "Invalid auth key."})
+        return mkresp(401, {"message": "Invalid auth key."})
 
     # Fetch part data
     try:
@@ -103,11 +107,11 @@ async def upload_part(req) -> web.Response:
 async def download_parts(req) -> web.Response:
     authkey = str(req.headers.get("X-StreamX-Auth", ""))
     if len(authkey) > 32:  # This is just sanitization for MongoDB
-        return mkresp(400, {"message": "Invalid auth key."})
+        return mkresp(401, {"message": "Invalid auth key."})
 
     kdata = app.mongo.keys.find_one({"authkey": authkey})
     if kdata is None:
-        return mkresp(400, {"message": "Invalid auth key."})
+        return mkresp(401, {"message": "Invalid auth key."})
 
     # Calculate head position
     try:
