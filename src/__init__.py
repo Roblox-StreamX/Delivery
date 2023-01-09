@@ -3,12 +3,10 @@
 # Modules
 import logging
 from aiohttp import web
-from dotenv import load_dotenv
 from rich.logging import RichHandler
 from pymongo import MongoClient, errors
 from urllib.parse import quote_plus as qp
 
-from .config import config
 
 # Setup logging
 logging.basicConfig(
@@ -19,9 +17,10 @@ logging.basicConfig(
 )
 log = logging.getLogger("rich")
 
-# Initialization
-load_dotenv()  # In production we won't use a .env file
+# Load configuration (after rich)
+from .config import config
 
+# Aiohttp setup
 app = web.Application()
 log.info("Initialized aiohttp successfully!")
 

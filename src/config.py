@@ -18,7 +18,8 @@ if not upstream_url.strip():
 # Load configuration
 if upstream_url != "file":
     try:
-        config = requests.get(f"http://{upstream_url}:4070", timeout = 3).json()
+        config = requests.get(f"http://{upstream_url}", timeout = 3).json()
+        log.info(f"Loaded configuration from {upstream_url}!")
 
     except requests.exceptions.Timeout:
         e("Timed out while connecting to config server!")
