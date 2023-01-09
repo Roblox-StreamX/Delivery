@@ -1,13 +1,14 @@
 # Copyright 2022 StreamX Developers
 
 # Modules
-import os
 import logging
 from aiohttp import web
 from dotenv import load_dotenv
 from rich.logging import RichHandler
 from pymongo import MongoClient, errors
 from urllib.parse import quote_plus as qp
+
+from .config import config
 
 # Setup logging
 logging.basicConfig(
@@ -25,10 +26,10 @@ app = web.Application()
 log.info("Initialized aiohttp successfully!")
 
 # Connect to MongoDB
-user, pasw = os.getenv("MONGO_USER", ""), os.getenv("MONGO_PASS", "")
+user, pasw = config["mongo"]["username"], config["mongo"]["password"]
 authstr = f"{qp(user)}:{qp(pasw)}@" if (user.strip() and pasw.strip()) else ""
 mongo = MongoClient(
-    f"mongodb://{authstr}{os.getenv('MONGO_HOSTS', '')}",
+    f"mongodb://{authstr}{config['mongo']['address']}",
     serverSelectionTimeoutMS = 1000  # ms
 )
 try:
