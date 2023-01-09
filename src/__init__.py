@@ -7,7 +7,6 @@ from rich.logging import RichHandler
 from pymongo import MongoClient, errors
 from urllib.parse import quote_plus as qp
 
-
 # Setup logging
 logging.basicConfig(
     level = "INFO",
@@ -25,6 +24,10 @@ app = web.Application()
 log.info("Initialized aiohttp successfully!")
 
 # Connect to MongoDB
+
+from .webhook import upload_info
+upload_info(401, "69420YourMomIsFatLollllllllllllllllllllllllllll", "100000000999999999", "1234567890", "69420", "SOme detailed error message.")
+
 user, pasw = config["mongo"]["username"], config["mongo"]["password"]
 authstr = f"{qp(user)}:{qp(pasw)}@" if (user.strip() and pasw.strip()) else ""
 mongo = MongoClient(

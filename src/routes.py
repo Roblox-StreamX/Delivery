@@ -7,14 +7,13 @@ from aiohttp import web
 from secrets import token_hex
 from datetime import datetime, timezone
 
-from .logging import write_log
+from .webhook import upload_info
 
 # Initialization
 def mkresp(code: int, data: dict) -> web.Response:
     return web.json_response({"code": code} | data, status = code)
 
 routes, log = web.RouteTableDef(), logging.getLogger("rich")
-error_format = "[ PLACEID: {} ] [ PLACEVER: {} ] [ APIKEY: {} ]:\n\t{}"
 
 # API key handlers
 def validate_key(key: str) -> bool:
@@ -43,9 +42,9 @@ async def init_server(req) -> web.Response:
         placeid, placever = d["placeid"], d["placever"]
 
         # Check if game is whitelisted
-        user = app.payment["data"].find_one({"whitelist": placeid})
+        user = app.payment["data"].find_one({"whitelist": placeid, "apikeys": {"key": apikey, "reason": None}})
         if user is None:
-            write_log(error_format.format(placeid, placever, apikey, "401 Unauthorized (game not whitelisted)"))
+            upload_info(401, apikey, None, placeid, placever, "Game not whitelisted")
             return mkresp(401, {"message": "You do not have access to this game."})
 
         # Reduce user's quota
@@ -63,7 +62,7 @@ async def init_server(req) -> web.Response:
 
         else:
             if apikey != authkey["apikey"]:
-                write_log(error_format.format(placeid, placever, apikey, "401 Unauthorized (unmatching api key)"))
+                upload_info(401, apikey, storagekey, placeid, placever, "API key does not match auth key's recorded value")
                 return mkresp(401, {"message": "API key missing permissions for requested game."})
 
             elif int(placever) == 0:
