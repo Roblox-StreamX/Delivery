@@ -31,6 +31,14 @@ def validate_key(key: str) -> bool:
 async def status(req) -> web.Response:
     return web.Response(text = "OK", status = 200)
 
+@routes.get("/dogwithabanana")
+@routes.post("/dogwithabanana")
+async def dogwithabanana(req) -> web.Response:
+    if req.method == "POST":
+        return web.Response(text = "https://www.youtube.com/watch?v=21HNPnjjcZE", status = 200)
+
+    raise web.HTTPTemporaryRedirect("https://www.youtube.com/watch?v=21HNPnjjcZE")
+
 @routes.post("/init")
 async def init_server(req) -> web.Response:
     try:
