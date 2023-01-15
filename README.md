@@ -28,7 +28,7 @@ To see the `config.json` format, please see [StreamX Configuration Server](https
 
 ### Launching
 
-Launch via `python3 streamer.py` to run with the inbuilt `.env` file, otherwise systemd or another init system is highly recommended.  
+You can launch StreamX via `python3 streamer.py` for development, otherwise systemd or another init system is highly recommended.  
 To run with systemd, create a `/lib/systemd/system/streamx.service`:
 ```
 [Unit]
@@ -39,9 +39,15 @@ Wants=network-online.target
 [Service]
 User=streamx
 Group=streamx
-ExecStart=python3 streamer.py
-WorkingDirectory=/home/streamx/Delivery
+
+ExecStart=python3 /path/to/streamer.py
+# If you downloaded the streamx binary:
+#ExecStart=/path/to/streamx
+
 Environment="STREAMX_UPSTREAM=10.0.0.1:4070"
+
+# WorkingDirectory is only required if you use STREAMX_UPSTREAM=file
+WorkingDirectory=/home/streamx/Delivery
 
 [Install]
 WantedBy=multi-user.target
