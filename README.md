@@ -46,7 +46,7 @@ ExecStart=python3 /path/to/streamer.py
 
 # This should be set to either the IP of your config server,
 # or set to 'file' if you wish to use config.json instead
-Environment="file"
+Environment="STREAMX_UPSTREAM=file"
 
 # WorkingDirectory is only required if you use STREAMX_UPSTREAM=file
 # Must be set to the parent folder of your ExecStart, in this example it would be
