@@ -41,12 +41,16 @@ User=streamx
 Group=streamx
 
 ExecStart=python3 /path/to/streamer.py
-# If you downloaded the streamx binary:
+# If you downloaded the streamx binary (also uncomment it):
 #ExecStart=/path/to/streamx
 
-Environment="STREAMX_UPSTREAM=10.0.0.1:4070"
+# This should be set to either the IP of your config server,
+# or set to 'file' if you wish to use config.json instead
+Environment="file"
 
 # WorkingDirectory is only required if you use STREAMX_UPSTREAM=file
+# Must be set to the parent folder of your ExecStart, in this example it would be
+# /path/to, please adapt to whatever you're using.
 WorkingDirectory=/home/streamx/Delivery
 
 [Install]
