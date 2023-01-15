@@ -26,7 +26,7 @@ def upload_info(code: int, apikey: str, authkey: str | NoneType, placeid: str, p
             {
                 "type": "rich",
                 "title": f"StreamX {server} - Code {code}",
-                "footer": {"text": f"Error code {code} generated at {date}"},
+                "footer": {"text": f"Error code {code} generated at {date} | Powered by StreamX"},
                 "fields": [
                     {"name": "API Key", "value": apikey, "inline": False},
                     {"name": "Place ID", "value": placeid, "inline": True},
