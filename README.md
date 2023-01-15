@@ -17,22 +17,18 @@ cd Delivery
 python3 -m pip install -r requirements.txt
 ```
 
-If not using systemd, and launching manually via Python, then setup a `.env` file:
-```
-MONGOUSER=MongoDB Username
-MONGOPASS=MongoDB Password
-MONGOHOST=192.168.0.x
-MONGOPORT=27017
-SERVHOST=0.0.0.0
-SERVPORT=8080
-PURCHASEIP="https://url-of-payment-server"
-PURCHASEKEY="Payment Server API key"
-```
+If you aren't using systemd and are launching manually via Python, ensure you use a `.env` file in the current working directory.
+
+### Configuration via STREAMX_UPSTREAM
+
+To ease configuration in multi-server setups, StreamX has a `STREAMX_UPSTREAM` environment variable which can set either to the IP and port  
+of a [StreamX Configuration Server](https://github.com/Roblox-StreamX/Configuration) or set to `file` to load a local `config.json` file inside the StreamX folder.
+
+To see the `config.json` format, please see [StreamX Configuration Server](https://github.com/Roblox-StreamX/Configuration).
 
 ### Launching
 
 Launch via `python3 streamer.py` to run with the inbuilt `.env` file, otherwise systemd or another init system is highly recommended.  
-
 To run with systemd, create a `/lib/systemd/system/streamx.service`:
 ```
 [Unit]
@@ -45,6 +41,7 @@ User=streamx
 Group=streamx
 ExecStart=python3 streamer.py
 WorkingDirectory=/home/streamx/Delivery
+Environment="STREAMX_UPSTREAM=10.0.0.1:4070"
 
 [Install]
 WantedBy=multi-user.target
