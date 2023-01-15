@@ -1,6 +1,7 @@
 # Copyright 2022 StreamX Developers
 
 # Modules
+import os
 import logging
 from aiohttp import web
 from rich.logging import RichHandler
@@ -31,11 +32,12 @@ mongo = MongoClient(
     serverSelectionTimeoutMS = 1000  # ms
 )
 try:
-    mongo.server_info()
-    log.info(f"Connected to MongoDB at {mongo.client.address[0]}!")
+    if os.getenv("SXPYINSTALLER") != "1":
+        mongo.server_info()
+        log.info(f"Connected to MongoDB at {mongo.client.address[0]}!")
 
-    app.mongo = mongo["streaming"]
-    app.payment = mongo["purchases"]
+        app.mongo = mongo["streaming"]
+        app.payment = mongo["purchases"]
 
 except errors.ServerSelectionTimeoutError:
     log.critical("FAILED to connect to MongoDB! Check MONGO* env and database status.")

@@ -2,6 +2,7 @@
 
 # Modules
 import os
+import sys
 import json
 import logging
 import requests
@@ -10,7 +11,7 @@ import requests
 log, upstream_url = logging.getLogger("rich"), os.getenv("STREAMX_UPSTREAM", "")
 def e(message: str) -> None:
     log.critical(message)
-    exit(1)
+    sys.exit(1)
 
 if not upstream_url.strip():
     e("Missing upstream configuration URL!")
@@ -28,7 +29,8 @@ if upstream_url != "file":
         e("Configuration server is offline!")
 
 else:
-    fp = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config.json")
+    fl = os.path.dirname(__file__ if not getattr(sys, "frozen", False) else sys.executable)
+    fp = os.path.join(fl, "config.json")
     if not os.path.isfile(fp):
         e("Config upstream set to file but no configuration file exists!")
 
