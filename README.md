@@ -2,12 +2,14 @@
 
 ### Requirements
 
-- A central MongoDB instance with authentication enabled
-    - This user needs the `readWriteAnyDatabase` permission
+- A central MongoDB instance (preferably with authentication enabled)
+    - If using auth, the user needs the `readWriteAnyDatabase` permission
 - Launching system capable of sending environment variables
 - All python requirements installed via `requirements.txt`
-- Python interpreter of version 3.9 or greater
+- Python interpreter of version **3.8 or greater**
+    - For full support from us, please use Python 3.10 or greater
 - A non-root user account to run the backend under
+    - StreamX **can** run as root, but it's not recommended
 
 ### Installation
 
@@ -17,7 +19,10 @@ cd Delivery
 python3 -m pip install -r requirements.txt
 ```
 
-If you aren't using systemd and are launching manually via Python, ensure you use a `.env` file in the current working directory.
+If you aren't using systemd and are launching manually via Python, ensure you pass `STREAMX_UPSTREAM` like so:
+```sh
+STREAMX_UPSTREAM=file python3 streamer.py
+```
 
 ### Configuration via STREAMX_UPSTREAM
 
