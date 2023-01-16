@@ -2,8 +2,8 @@
 
 # Modules
 import socket
+from typing import Union
 from requests import post
-from types import NoneType
 from datetime import datetime, timezone
 
 from .config import config
@@ -16,7 +16,7 @@ webhook_enabled = webhook_url is not None
 server = socket.gethostname().split("-")[-1]
 
 # Handlers
-def upload_info(code: int, apikey: str, authkey: str | NoneType, placeid: str, placever: str, error: str) -> None:
+def upload_info(code: int, apikey: str, authkey: Union[str, None], placeid: str, placever: str, error: str) -> None:
     if not webhook_enabled:
         return
 
