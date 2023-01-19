@@ -30,7 +30,7 @@ if upstream_url != "file":
 
 else:
     fl = os.path.dirname(__file__ if not getattr(sys, "frozen", False) else sys.executable)
-    fp = os.path.join(fl, "config.json")
+    fp = os.path.abspath(os.path.join(fl, "../config.json"))
     if not os.path.isfile(fp):
         e("Config upstream set to file but no configuration file exists!")
 
