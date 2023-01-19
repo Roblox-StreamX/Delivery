@@ -25,7 +25,7 @@ app = falcon.App()
 log.info("Initialized Falcon successfully!")
 
 # Connect to MongoDB
-user, pasw = config["mongo"]["username"], config["mongo"]["password"]
+user, pasw = config["mongo"].get("username", ""), config["mongo"].get("password", "")
 authstr = f"{qp(user)}:{qp(pasw)}@" if (user.strip() and pasw.strip()) else ""
 mongo = MongoClient(
     f"mongodb://{authstr}{config['mongo']['address']}",
