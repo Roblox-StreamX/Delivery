@@ -2,8 +2,8 @@
 
 # Modules
 import os
+import falcon
 import logging
-from aiohttp import web
 from rich.logging import RichHandler
 from pymongo import MongoClient, errors
 from urllib.parse import quote_plus as qp
@@ -20,9 +20,9 @@ log = logging.getLogger("rich")
 # Load configuration (after rich)
 from .config import config
 
-# Aiohttp setup
-app = web.Application()
-log.info("Initialized aiohttp successfully!")
+# Falcon setup
+app = falcon.App()
+log.info("Initialized Falcon successfully!")
 
 # Connect to MongoDB
 user, pasw = config["mongo"]["username"], config["mongo"]["password"]

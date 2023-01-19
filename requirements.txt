@@ -1,4 +1,7 @@
 rich
-aiohttp
 pymongo
 requests
+
+# Hosting requirements
+falcon
+fastwsgi

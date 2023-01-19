@@ -1,19 +1,17 @@
 # Copyright 2022 StreamX Developers
 
 # Modules
+import json
+import falcon
 import logging
 from src import app
-from aiohttp import web
 from secrets import token_hex
 from datetime import datetime, timezone
 
 from .webhook import upload_info
 
 # Initialization
-def mkresp(code: int, data: dict) -> web.Response:
-    return web.json_response({"code": code} | data, status = code)
-
-routes, log = web.RouteTableDef(), logging.getLogger("rich")
+log = logging.getLogger("rich")
 
 # API key handlers
 def validate_key(key: str) -> bool:
@@ -27,33 +25,37 @@ def validate_key(key: str) -> bool:
     return user["quota"] > 0
 
 # Routing
-@routes.get("/")
-async def status(req) -> web.Response:
-    return web.Response(text = "OK", status = 200)
+class Index:
+    def on_get(self, req, resp) -> None:
+        resp.text = """This is a StreamX Production Server.
+        You can GET /dogwithabanana to see a dog with a banana.
 
-@routes.get("/dogwithabanana")
-@routes.post("/dogwithabanana")
-async def dogwithabanana(req) -> web.Response:
-    if req.method == "POST":
-        return web.Response(text = "https://www.youtube.com/watch?v=21HNPnjjcZE", status = 200)
+        You can also use /init, /upload, and /download like normal people.
 
-    raise web.HTTPTemporaryRedirect("https://www.youtube.com/watch?v=21HNPnjjcZE")
+        NOTICE:
+        StreamX developers are not responsible for your plastic USB drives melting.
+        Nor are we responsible for any depression, anxiety, or overall sadness StreamX may cause you."""
 
-@routes.post("/init")
-async def init_server(req) -> web.Response:
-    try:
-        apikey = req.headers.get("X-StreamX-Key", "")
+class DogWithABanana:
+    def on_get(self, req, resp) -> None:
+        raise falcon.HTTPFound("https://www.youtube.com/watch?v=21HNPnjjcZE")
+
+    def on_post(self, req, resp) -> None:
+        resp.text = "https://www.youtube.com/watch?v=21HNPnjjcZE"
+
+class Initialize:
+    def on_post(self, req, resp) -> None:
+        apikey = req.get_header("X-StreamX-Key", True, "")
         if not validate_key(apikey):
-            return mkresp(401, {"message": "Invalid API key."})
+            raise falcon.HTTPUnauthorized(title = "401", description = "Invalid API key.")
 
-        d = await req.json()
-        placeid, placever = d["placeid"], d["placever"]
+        placeid, placever = req.get_header("X-StreamX-PlaceID", True, ""), req.get_header("X-StreamX-PlaceVer", True, "")
 
         # Check if game is whitelisted
         user = app.payment["data"].find_one({"whitelist": placeid, "apikeys": {"key": apikey, "reason": None}})
         if user is None:
             upload_info(401, apikey, None, placeid, placever, "Game not whitelisted")
-            return mkresp(401, {"message": "You do not have access to this game."})
+            raise falcon.HTTPUnauthorized(title = "401", description = "You do not have access to this game.")
 
         # Reduce user's quota
         dt = datetime.now(timezone.utc).strftime("%D")
@@ -70,8 +72,8 @@ async def init_server(req) -> web.Response:
 
         else:
             if apikey != authkey["apikey"]:
-                upload_info(401, apikey, storagekey, placeid, placever, "API key does not match auth key's recorded value")
-                return mkresp(401, {"message": "API key missing permissions for requested game."})
+                upload_info(401, apikey, storagekey, placeid, placever, "API key does not match auth key's cached value")
+                raise falcon.HTTPUnauthorized(title = "401", description = "API key missing permissions for requested game.")
 
             elif int(placever) == 0:
                 app.mongo.parts[storagekey].drop()
@@ -82,60 +84,68 @@ async def init_server(req) -> web.Response:
             else:
                 authkey = authkey["authkey"]
 
-        return mkresp(200, {"key": authkey, "upload": upload})
+        return {"key": authkey, "upload": upload}
 
-    except KeyError:
-        return mkresp(400, {"message": "Missing either PlaceID or Place Version."})
+class Upload:
+    def on_post(self, req, resp) -> None:
+        authkey = req.get_header("X-StreamX-Auth", True, "")
+        if len(authkey) > 32:  # This is just sanitization for MongoDB
+            raise falcon.HTTPBadRequest(title = "Invalid authentication key", description = "Authentication keys are at most 32 characters long.")
 
-@routes.post("/upload")
-async def upload_part(req) -> web.Response:
-    authkey = str(req.headers.get("X-StreamX-Auth", ""))
-    if len(authkey) > 32:  # This is just sanitization for MongoDB
-        return mkresp(401, {"message": "Invalid auth key."})
+        kdata = app.mongo.keys.find_one({"authkey": authkey})
+        if kdata is None:
+            raise falcon.HTTPUnauthorized(title = "Invalid authentication key", description = "The authentication key you provided is invalid.")
 
-    kdata = app.mongo.keys.find_one({"authkey": authkey})
-    if kdata is None:
-        return mkresp(401, {"message": "Invalid auth key."})
+        # Fetch part data
+        try:
+            tb = []
+            for part in (req.stream.read()).decode("utf8").split(","):
+                x, y, z, d = part.split(":")
+                tb.append({"x": float(x), "y": float(y), "z": float(z), "d": d})
 
-    # Fetch part data
-    try:
-        tb = []
-        for part in (await req.read()).decode().split(","):
-            x, y, z, d = part.split(":")
-            tb.append({"x": float(x), "y": float(y), "z": float(z), "d": d})
+            app.mongo.parts[kdata["storagekey"]].insert_many(tb)
+            return {"message": "OK"}
 
-        app.mongo.parts[kdata["storagekey"]].insert_many(tb)
-        return mkresp(200, {"message": "OK"})
+        except Exception:
+            raise falcon.HTTPBadRequest(title = "Invalid request", description = "The server could not understand the provided part information.")
 
-    except Exception:
-        return mkresp(400, {"message": "Invalid part information."})
+class Download:
+    def on_post(self, req, resp) -> None:
+        authkey = req.get_header("X-StreamX-Auth", True, "")
+        if len(authkey) > 32:  # This is just sanitization for MongoDB
+            raise falcon.HTTPBadRequest(title = "Invalid authentication key", description = "Authentication keys are at most 32 characters long.")
 
-@routes.post("/download")
-async def download_parts(req) -> web.Response:
-    authkey = str(req.headers.get("X-StreamX-Auth", ""))
-    if len(authkey) > 32:  # This is just sanitization for MongoDB
-        return mkresp(401, {"message": "Invalid auth key."})
+        kdata = app.mongo.keys.find_one({"authkey": authkey})
+        if kdata is None:
+            raise falcon.HTTPUnauthorized(title = "Invalid authentication key", description = "The authentication key you provided is invalid.")
 
-    kdata = app.mongo.keys.find_one({"authkey": authkey})
-    if kdata is None:
-        return mkresp(401, {"message": "Invalid auth key."})
+        # Load JSON
+        body = req.stream.read()
+        if not body:
+            raise falcon.HTTPBadRequest(title = "Empty request body", description = "A valid JSON document is required.")
 
-    # Calculate head position
-    try:
-        d = await req.json()
-        (x, y, z), sd = d["HeadPosition"], d["StudDifference"]
-        x, y, z = float(x), float(y), float(z)
-        parts = list(app.mongo.parts[kdata["storagekey"]].find({
-            "x": {"$lt": x + sd, "$gt": x - sd},
-            "y": {"$lt": y + sd, "$gt": y - sd},
-            "z": {"$lt": z + sd, "$gt": z - sd},
-        }))
-        if not parts:
-            return web.Response(body = "!")
+        try:
+            d = json.loads(body.decode("utf8"))
 
-        return web.Response(body = ",".join([p["d"] for p in parts]))
+        except (ValueError, UnicodeDecodeError):
+            raise falcon.HTTPBadRequest(title = "Malformed JSON", description = "StreamX was unable to decode the request body.")
 
-    except KeyError:
-        return mkresp(400, {"message": "Missing required fields: HeadPosition + StudDifference."})
+        # Calculate head position
+        try:
+            (x, y, z), sd = d["HeadPosition"], d["StudDifference"]
+            x, y, z = float(x), float(y), float(z)
+            parts = list(app.mongo.parts[kdata["storagekey"]].find({
+                "x": {"$lt": x + sd, "$gt": x - sd},
+                "y": {"$lt": y + sd, "$gt": y - sd},
+                "z": {"$lt": z + sd, "$gt": z - sd},
+            }))
+            resp.text = ",".join([p["d"] for p in parts]) if parts else "!"
 
-app.add_routes(routes)
+        except KeyError:
+            raise falcon.HTTPBadRequest(title = "Required fields missing", description = "A required field was missing from the request body.")
+
+app.add_route("/", Index())
+app.add_route("/dogwithabanana", DogWithABanana())
+app.add_route("/init", Initialize())
+app.add_route("/upload", Upload())
+app.add_route("/download", Download())
