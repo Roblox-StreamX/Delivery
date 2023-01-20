@@ -39,6 +39,10 @@ class Index:
         StreamX developers are not responsible for your plastic USB drives melting.
         Nor are we responsible for any depression, anxiety, or overall sadness StreamX may cause you.""".replace("    ", "")
 
+    def on_post(self, req, resp) -> None:
+        resp.content_type = "text/plain"
+        resp.text = "OK"
+
 class DogWithABanana:
     def on_get(self, req, resp) -> None:
         raise falcon.HTTPFound("https://www.youtube.com/watch?v=21HNPnjjcZE")
