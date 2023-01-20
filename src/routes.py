@@ -57,7 +57,11 @@ class Initialize:
         if not validate_key(apikey):
             raise falcon.HTTPUnauthorized(title = "401", description = "Invalid API key.")
 
-        placeid, placever = req.get_header("X-StreamX-PlaceID", True, ""), req.get_header("X-StreamX-PlaceVer", True, "")
+        try:
+            placeid, placever = int(req.get_header("X-StreamX-PlaceID", True)), int(req.get_header("X-StreamX-PlaceVer", True))
+
+        except ValueError:
+            raise falcon.HTTPBadRequest(title = "Invalid headers", description = "The headers you provided could not be converted to integers.")
 
         # Check if game is whitelisted
         user = payment_db["data"].find_one({"whitelist": placeid, "apikeys": {"key": apikey, "reason": None}})
@@ -92,7 +96,7 @@ class Initialize:
             else:
                 authkey = authkey["authkey"]
 
-        return {"key": authkey, "upload": upload}
+        resp.media = {"key": authkey, "upload": upload}
 
 class Upload:
     def on_post(self, req, resp) -> None:
@@ -112,7 +116,7 @@ class Upload:
                 tb.append({"x": float(x), "y": float(y), "z": float(z), "d": d})
 
             streaming_db.parts[kdata["storagekey"]].insert_many(tb)
-            return {"message": "OK"}
+            resp.media = {"message": "OK"}
 
         except Exception:
             raise falcon.HTTPBadRequest(title = "Invalid request", description = "The server could not understand the provided part information.")
@@ -147,6 +151,7 @@ class Download:
                 "y": {"$lt": y + sd, "$gt": y - sd},
                 "z": {"$lt": z + sd, "$gt": z - sd},
             }))
+            resp.content_type = "text/plain"
             resp.text = ",".join([p["d"] for p in parts]) if parts else "!"
 
         except KeyError:
