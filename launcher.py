@@ -37,7 +37,9 @@ def status():
 def install():
     print("Installing StreamX... This will take a while.")
     subprocess.run(["python3", "-m", "pip", "install", "-r", "requirements.txt"])
-    exit("Success! Run the script again and run \"start\" to start StreamX.")
+    print("Successfully installed all packages!\nAttempting to start StreamX...")
+    start()
+    exit("Complete.")
 
 
 def _help():
