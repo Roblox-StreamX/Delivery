@@ -41,7 +41,7 @@ def install():
 
 
 def _help():
-    print("""
+    print("".join([n.lstrip() + "\n" for n in """
     StreamX Launcher Script
 
     Pretty basic but gets the job done.
@@ -50,11 +50,7 @@ def _help():
     -- stop: Stops StreamX
     -- restart: Restarts StreamX
     -- status: gives the status of StreamX.
-    -- install: Installs StreamX. WARNING: Do NOT run this after the first time.
-
-    
-    """.split("\n"))
-    exit()
+    -- install: Installs StreamX. WARNING: Do NOT run this after the first time.""".split("\n")]))
 
 ###################
 
@@ -67,8 +63,9 @@ cmds = {
     "help": _help,
     "status": status
 }
-x = input("launcher/")
-if x not in cmds:
-    exit("Invalid command! Run \"help\" to get a list of commands.")
+while True:
+    x = input("launcher/")
+    if x not in cmds:
+        print("Invalid command! Run \"help\" to get a list of commands.")
 
-cmds[x]()
+    cmds[x]()
