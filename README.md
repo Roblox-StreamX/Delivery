@@ -13,11 +13,24 @@
 
 ### Installation
 
+#### Method 1: Launcher Script
+A newly introduced launcher script can install StreamX.
 ```
-git clone https://github.com/Roblox-StreamX/Delivery
+git clone https://github.com/Roblox-StreamX/Delivery /Delivery
+cd Delivery
+python3 launcher.py
+> install
+```
+
+#### Method 2: Manual Install
+
+```
+git clone https://github.com/Roblox-StreamX/Delivery /Delivery
 cd Delivery
 python3 -m pip install -r requirements.txt
 ```
+
+#### Method 3: No Systemd Install
 
 If you aren't using systemd and are launching manually via Python, ensure you pass `STREAMX_UPSTREAM` like so:
 ```sh
@@ -32,6 +45,8 @@ of a [StreamX Configuration Server](https://github.com/Roblox-StreamX/Configurat
 To see the `config.json` format, please see [StreamX Configuration Server](https://github.com/Roblox-StreamX/Configuration).
 
 ### Launching
+
+#### NEW: You can run `python3 launcher.py` to start StreamX, stop it, or insall!
 
 You can launch StreamX via `python3 streamer.py` for development, otherwise systemd or another init system is highly recommended.  
 To run with systemd, create a `/lib/systemd/system/streamx.service`:

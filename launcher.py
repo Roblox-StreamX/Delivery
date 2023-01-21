@@ -22,21 +22,18 @@ if request == "start":
 elif request == "restart":
     print("Restarting StreamX...")
     subprocess.run(["sudo", "systemctl", "restart", "streamx"])
-    print("Success!")
-    exit()
+    exit("Success!")
 elif request == "stop":
     print("Stopping StreamX...")
     subprocess.run(["sudo", "systemctl", "stop", "streamx"])
-    print("Success!")
-    exit()
+    exit("Success!")
 elif request == "status":
     subprocess.run(["systemctl", "status", "streamx"])
     exit()
 elif request == "install":
     print("Installing StreamX... This will take a while.")
     subprocess.run("python3 -m pip install -r requirements.txt")
-    print("Success! Run the script again and run \"start\" to start StreamX.")
-    exit()
+    exit("Success! Run the script again and run \"start\" to start StreamX.")
 elif request == "help":
     print("""
     StreamX Launcher Script
@@ -51,6 +48,6 @@ elif request == "help":
 
     
     """.split("\n"))
-else:
-    print("Request not found! Run \"help\" for more commands.")
     exit()
+else:
+    exit("Request not found! Run \"help\" for more commands.")
