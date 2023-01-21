@@ -46,7 +46,7 @@ To see the `config.json` format, please see [StreamX Configuration Server](https
 
 ### Launching
 
-#### NEW: You can run `python3 launcher.py` to start StreamX, stop it, or insall!
+#### NEW: You can run `python3 launcher.py` to start StreamX, stop it, or install!
 
 You can launch StreamX via `python3 streamer.py` for development, otherwise systemd or another init system is highly recommended.  
 To run with systemd, create a `/lib/systemd/system/streamx.service`:
