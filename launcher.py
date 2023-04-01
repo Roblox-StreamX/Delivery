@@ -3,11 +3,11 @@ import subprocess
 import os
 
 
-print("------------------ StreamX Launcher Script 1.0------------------")
+print("------------------ StreamX Launcher Script 1.0 ------------------")
 print("2023 StreamX Developers")
 
 
-print("------------------------------------------------------------------------")
+print("-----------------------------------------------------------------")
 print("For help, run the \"help\" commmand")
 
 
@@ -52,7 +52,8 @@ def _help():
     -- stop: Stops StreamX
     -- restart: Restarts StreamX
     -- status: gives the status of StreamX.
-    -- install: Installs StreamX. WARNING: Do NOT run this after the first time.""".split("\n")]))
+    -- install: Installs StreamX packages. WARNING: Do NOT run this after the first time.""".split("\n")]))
+    
 
 ###################
 
@@ -66,8 +67,11 @@ cmds = {
     "status": status
 }
 while True:
-    x = input("launcher/")
+    x = input("launcher/>")
     if x not in cmds:
         print("Invalid command! Run \"help\" to get a list of commands.")
-
-    cmds[x]()
+        
+    try:
+         cmds[x]()
+    except:
+        print(f"Something went wrong running {x}. This could be an installation error.\nTo reinstall the packages, run the install command.")
